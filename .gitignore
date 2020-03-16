@@ -110,3 +110,5 @@ ENV/
 src/teras
 src/chainer-nn
 src/parsers/*.cpp
+exps/
+data/

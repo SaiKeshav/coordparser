@@ -7,6 +7,7 @@ import chainer_nn.functions as nn_F
 import chainer_nn.links as nn_L
 import numpy as np
 
+import ipdb
 
 class Encoder(chainer.Chain):
 

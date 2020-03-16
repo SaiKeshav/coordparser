@@ -8,6 +8,8 @@ from teras.dataset.loader import CachedTextLoader
 from teras.io import reader
 from teras.preprocessing import text
 
+import ipdb
+
 
 _CHAR_PAD = "<PAD>"
 CC_KEY = ["and", "or", "but", "nor", "and\/or"]

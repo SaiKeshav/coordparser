@@ -1,0 +1,12 @@
+# Train the model which replicates the reported results for PTB datset
+python main.py train --cachedir ../exps/cache --devfile ../data/ptb-dev.ext.cleaned --device 0 --format tree --savedir ../exps/model2 --trainfile ../data/ptb-train.ext.cleaned --embedfile ../data/glove.6B.100d.txt
+
+# Get the test accuracy
+python main.py test --device 0 --modelfile ../exps/model2/20200116-e40bf1.npz --testfile ../data/ptb-test.ext.cleaned
+
+# Parse new set of sentences
+# first generate file containing sentences in form of word_postag
+# To do this for the ptb dataset, run in data folder
+python extract.py ptb-test.ext.cleaned > ptb-test.ext.cleaned.extracted
+# then do the following
+python main.py parse --device 0 --modelfile ../exps/model2/20200116-e40bf1.npz --input ../data/ptb-test.ext.cleaned.extracted > ../logs/test_extractions.txt

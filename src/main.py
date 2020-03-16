@@ -11,6 +11,7 @@ import eval as eval_module
 import models
 import parsers
 import utils
+import os
 
 
 chainer.Variable.__int__ = lambda self: int(self.data)
@@ -42,6 +43,8 @@ def train(
     assert isinstance(logger, logging.AppLogger)
     if model_config is None:
         model_config = {}
+
+    os.makedirs(save_dir,exist_ok=True)
 
     read_genia = format == 'genia'
     loader = dataset.DataLoader.build(
@@ -119,7 +122,8 @@ def train(
     if save_dir is not None:
         accessid = logging.getLogger().accessid
         date = logging.getLogger().accesstime.strftime('%Y%m%d')
-        metric = 'whole' if isinstance(model, models.Teranishi17) else 'inner'
+        # metric = 'whole' if isinstance(model, models.Teranishi17) else 'inner'
+        metric = 'exact'
         trainer.add_listener(utils.Saver(
             model, basename="{}-{}".format(date, accessid),
             context=dict(App.context, builder=builder),

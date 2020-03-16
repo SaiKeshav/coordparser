@@ -5,6 +5,7 @@ import chainer
 import numpy as np
 
 import teras
+import pickle
 
 
 class Record(object):
@@ -76,7 +77,10 @@ class Counter(object):
     def reset(self):
         self._records.clear()
 
-    def append(self, pred_coords, true_coords):
+    def append(self, pred_coords, true_coords, dump=False):
+        if dump:
+            pickle.dump(pred_coords, open('/home/keshav/pred_coords.pkl','ab'))
+            pickle.dump(true_coords, open('/home/keshav/true_coords.pkl','ab'))
         for cc in sorted(true_coords.keys()):
             pred_coord = pred_coords.get(cc, None)
             true_coord = true_coords[cc]
@@ -137,7 +141,7 @@ class Evaluator(teras.training.event.Listener):
         self._counter_whole.append(pred_coords, true_coords)
         self._counter_outer.append(pred_coords, true_coords)
         self._counter_inner.append(pred_coords, true_coords)
-        self._counter_exact.append(pred_coords, true_coords)
+        self._counter_exact.append(pred_coords, true_coords, dump=True)
         positive_pred_coords = \
             [coord for coord in pred_coords.values() if coord is not None]
         positive_true_coords = \
