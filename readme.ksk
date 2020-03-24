@@ -1,8 +1,15 @@
 # Train the model which replicates the reported results for PTB datset
-python main.py train --cachedir ../exps/cache --devfile ../data/ptb-dev.ext.cleaned --device 0 --format tree --savedir ../exps/model2 --trainfile ../data/ptb-train.ext.cleaned --embedfile ../data/glove.6B.100d.txt
+python main.py train --cachedir ../exps/cache --devfile ../data/ptb-dev.ext.cleaned --device 0 --format tree --savedir ../exps/baseline --trainfile ../data/ptb-train.ext.cleaned --embedfile ../data/glove.6B.100d.txt
 
 # Get the test accuracy
-python main.py test --device 0 --modelfile ../exps/model2/20200116-e40bf1.npz --testfile ../data/ptb-test.ext.cleaned
+python main.py test --device 0 --modelfile ../exps/baseline/20200116-e40bf1.npz --testfile ../data/ptb-test.ext.cleaned
+
+# Train a BERT model
+python main.py train --devfile ../data/ptb-dev-bert.ext.cleaned --device 0 --format tree --savedir ../exps/large/simple --trainfile ../data/ptb-train-bert.ext.cleaned --inputs bert-large --bert_model 1 --bert_dir ../data/bert_large --lr 2e-5 --epoch 5
+
+# Train a LSTM model with BERT-embeddings
+python main.py train --devfile ../data/ptb-dev.ext.cleaned --device 0 --format tree --savedir ../exps/large/embed --trainfile ../data/ptb-train.ext.cleaned --inputs bert-large
+
 
 # Parse new set of sentences
 # first generate file containing sentences in form of word_postag

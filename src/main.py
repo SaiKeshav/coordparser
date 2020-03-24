@@ -17,6 +17,7 @@ import parsers
 import utils
 
 import os
+import sys
 import ipdb
 
 chainer.Variable.__int__ = lambda self: int(self.data)
@@ -99,12 +100,10 @@ def train(
         chainer.cuda.get_device_from_id(device).use()
         model.to_gpu(device)
 
-    if bert_model == 2:
-        optimizer = chainer.optimizers.AdamW(
-            alpha=lr, 
-            eps=1e-6, weight_decay_rate=0.01)
+    if bert_model == 1:
+        optimizer = chainer.optimizers.AdamW(alpha=lr)
         optimizer.setup(model)
-        optimizer.add_hook(chainer.optimizer.GradientClipping(1.))
+        # optimizer.add_hook(chainer.optimizer.GradientClipping(1.))
     else:
         optimizer = chainer.optimizers.AdamW(
             alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
@@ -347,8 +346,16 @@ def check_grammar(test_file, limit=-1, grammar_type=1):
 
 
 if __name__ == "__main__":
-    App.configure(logdir=App.basedir + '/../logs')
+    # App.configure(logdir=App.basedir + '/../logs')
+    if '--savedir' in sys.argv:
+        savedir_index = sys.argv.index('--savedir')+1
+        savedir = sys.argv[savedir_index]
+    if '--modelfile' in sys.argv:
+        savedir_index = sys.argv.index('--modelfile')+1
+        savedir = os.path.dirname(sys.argv[savedir_index])
+    App.configure(logdir=App.basedir+'/'+savedir)
     logging.AppLogger.configure(mkdir=True)
+
     App.add_command('train', train, {
         'batch_size':
         arg('--batchsize', type=int, default=20, metavar='NUM',
