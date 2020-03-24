@@ -11,6 +11,7 @@ from chainer_nn.links.nlp import BertLargeEmbedding
 from chainer_nn.links.nlp import ElmoEmbedding
 import numpy as np
 
+import ipdb
 
 class CoordSolverBuilder(object):
 
@@ -36,6 +37,8 @@ class CoordSolverBuilder(object):
             mlp_unit1=kwargs.get('lstm_hidden_size', 512) * 2,
             mlp_unit2=kwargs.get('lstm_hidden_size', 512) * 2,
             mlp_dropout=kwargs.get('dropout', 0.5),
+            bert_model=kwargs.get('bert_model', 0),
+            bert_dir=kwargs.get('bert_dir','')
         ))
         self.config.update(kwargs)
 
@@ -124,6 +127,8 @@ class CoordSolverBuilder(object):
             self.embeddings_dropout,
             self.lstm_dropout,
             self.recurrent_dropout,
+            self.bert_model,
+            self.bert_dir
         )
         return encoder
 

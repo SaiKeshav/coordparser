@@ -100,8 +100,8 @@ class DataLoader(CachedTextLoader):
             assert len(words) == len(ext_postags)
             postags = ext_postags
         postag_ids = self.map_attr('pos', postags, self.train)
-        if cont_embeds is not None:
-            assert cont_embeds.shape[1] == len(words)
+        # if cont_embeds is not None:
+        #    assert cont_embeds.shape[1] == len(words)
 
         self._updated = self.train
         return word_ids, postag_ids, char_ids, \

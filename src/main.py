@@ -1,18 +1,23 @@
 #!/usr/bin/env python
 
 import chainer
+from chainer.training import extensions
+# from chainer import training
+
 from teras import training
 from teras.app import App, arg
 from teras.utils import git, logging
 from tqdm import tqdm
 
+from models import optimization
 import dataset
 import eval as eval_module
 import models
 import parsers
 import utils
-import os
 
+import os
+import ipdb
 
 chainer.Variable.__int__ = lambda self: int(self.data)
 chainer.Variable.__float__ = lambda self: float(self.data)
@@ -36,13 +41,18 @@ def train(
         save_dir=None,
         seed=None,
         cache_dir='',
-        refresh_cache=False):
+        refresh_cache=False,
+        bert_model=0,
+        bert_dir=''):
     if seed is not None:
         utils.set_random_seed(seed, device)
     logger = logging.getLogger()
+    # logger.configure(filename='log.txt', logdir=save_dir)
     assert isinstance(logger, logging.AppLogger)
     if model_config is None:
         model_config = {}
+    model_config['bert_model'] = bert_model
+    model_config['bert_dir'] = bert_dir
 
     os.makedirs(save_dir,exist_ok=True)
 
@@ -89,13 +99,20 @@ def train(
         chainer.cuda.get_device_from_id(device).use()
         model.to_gpu(device)
 
-    optimizer = chainer.optimizers.Adam(
-        alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
-    optimizer.setup(model)
-    if l2_lambda > 0.0:
-        optimizer.add_hook(chainer.optimizer.WeightDecay(l2_lambda))
-    if grad_clip > 0.0:
-        optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
+    if bert_model == 2:
+        optimizer = chainer.optimizers.AdamW(
+            alpha=lr, 
+            eps=1e-6, weight_decay_rate=0.01)
+        optimizer.setup(model)
+        optimizer.add_hook(chainer.optimizer.GradientClipping(1.))
+    else:
+        optimizer = chainer.optimizers.AdamW(
+            alpha=lr, beta1=0.9, beta2=0.999, eps=1e-08)
+        optimizer.setup(model)
+        if l2_lambda > 0.0:
+            optimizer.add_hook(chainer.optimizer.WeightDecay(l2_lambda))
+        if grad_clip > 0.0:
+            optimizer.add_hook(chainer.optimizer.GradientClipping(grad_clip))
 
     def _report(y, t):
         values = {}
@@ -119,6 +136,19 @@ def train(
             parser, logger=logging, report_details=False)
         trainer.add_listener(evaluator)
 
+    if bert_model == 2:
+        num_train_steps = 20000*5/20
+        num_warmup_steps = 10000/20
+        learning_rate = 2e-5
+        # learning rate (eta) scheduling in Adam
+        lr_decay_init = learning_rate * \
+            (num_train_steps - num_warmup_steps) / num_train_steps
+        trainer.add_hook(training.BATCH_END, extensions.LinearShift(  # decay
+            'eta', (lr_decay_init, 0.), (num_warmup_steps, num_train_steps), optimizer=optimizer))
+        trainer.add_hook(training.BATCH_END, extensions.WarmupShift(  # warmup
+            'eta', 0., num_warmup_steps, learning_rate, optimizer=optimizer))
+
+
     if save_dir is not None:
         accessid = logging.getLogger().accessid
         date = logging.getLogger().accesstime.strftime('%Y%m%d')
@@ -133,7 +163,7 @@ def train(
     trainer.fit(train_dataset, test_dataset, n_epoch, batch_size)
 
 
-def test(model_file, test_file, filter_type=True, limit=-1, device=-1):
+def test(model_file, test_file, filter_type=True, limit=-1, device=-1, bert_model=0, bert_dir=''):
     context = utils.Saver.load_context(model_file)
     logging.trace('# context: {}'.format(context))
     if context.seed is not None:
@@ -358,6 +388,12 @@ if __name__ == "__main__":
         'lr':
         arg('--lr', type=float, default=0.001, metavar='VALUE',
             help='Learning Rate'),
+        'bert_model':
+        arg('--bert_model', type=int, default=0, metavar='VALUE',
+            help='Whether to use BERT model or not'),
+        'bert_dir':
+        arg('--bert_dir', type=str, default='', metavar='VALUE',
+            help='Directory containing bert files'),
         'model_config':
         arg('--model', action='store_dict', metavar='KEY=VALUE',
             help='Model configuration'),
@@ -390,6 +426,12 @@ if __name__ == "__main__":
         'test_file':
         arg('--testfile', type=str, required=True, metavar='FILE',
             help='Test data file'),
+        'bert_model':
+        arg('--bert_model', type=int, default=0, metavar='VALUE',
+            help='Whether to use BERT model or not'),
+        'bert_dir':
+        arg('--bert_dir', type=str, default='', metavar='VALUE',
+            help='Directory containing bert files')
     })
     App.add_command('parse', parse, {
         'n_best':
